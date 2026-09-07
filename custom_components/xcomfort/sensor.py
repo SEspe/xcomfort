@@ -40,8 +40,12 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     i = 0
     for device in coordinator.data:
         if device['type'].find("Temp") >= 0:
-            name = device['name'].replace("(temperature)","")
-            async_add_entities([xcTemperature(coordinator, i, device['id'], name)])
+            # The channel suffix is kept. A room thermostat exposes both a
+            # TemperatureSensor "(temperature)" and a WheelSensor "(adjustment)"
+            # under one device name, so stripping it off the reading left the two
+            # entities telling apart only by the wheel having a suffix. The SHC
+            # emits both suffixes in English whatever its display language.
+            async_add_entities([xcTemperature(coordinator, i, device['id'], device['name'])])
         else:
             for type_name, config in SENSOR_TYPES.items():
                 if device['type'].find(type_name) >= 0:
