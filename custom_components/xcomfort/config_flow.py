@@ -1,6 +1,8 @@
 ###Version 1.3.5
 from homeassistant.const import CONF_NAME
 from homeassistant import config_entries
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+import aiohttp
 import voluptuous as vol
 import logging
 
@@ -30,6 +32,12 @@ DATA_SCHEMA = vol.Schema(
     }
 )
 
+REAUTH_SCHEMA = vol.Schema(
+    {
+        vol.Required("password"): str,
+    }
+)
+
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
@@ -49,4 +57,53 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
         return self.async_show_form(
             step_id="user", data_schema=DATA_SCHEMA, errors=errors,
+        )
+
+    async def _async_check_credentials(self, url, username, password):
+        """Return an error key if the SHC rejects these credentials, else None."""
+        session = async_get_clientsession(self.hass)
+        auth = aiohttp.BasicAuth(login=username, password=password)
+        try:
+            async with session.get(url, auth=auth) as response:
+                if response.status == 401:
+                    return "invalid_auth"
+                if response.status != 200:
+                    _LOGGER.error(
+                        "Reauth check: SHC responded with status %s", response.status
+                    )
+                    return "cannot_connect"
+        except aiohttp.ClientError as err:
+            _LOGGER.error("Reauth check: cannot reach SHC: %s", err)
+            return "cannot_connect"
+        return None
+
+    async def async_step_reauth(self, entry_data):
+        """Triggered when the SHC rejects the stored credentials."""
+        self._reauth_entry = self.hass.config_entries.async_get_entry(
+            self.context["entry_id"]
+        )
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(self, user_input=None):
+        """Ask for a new password and verify it against the SHC."""
+        entry = self._reauth_entry
+        errors = {}
+
+        if user_input is not None:
+            error = await self._async_check_credentials(
+                entry.data["url"], entry.data["username"], user_input["password"]
+            )
+            if error is None:
+                self.hass.config_entries.async_update_entry(
+                    entry, data={**entry.data, "password": user_input["password"]}
+                )
+                await self.hass.config_entries.async_reload(entry.entry_id)
+                return self.async_abort(reason="reauth_successful")
+            errors["base"] = error
+
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=REAUTH_SCHEMA,
+            description_placeholders={"username": entry.data["username"]},
+            errors=errors,
         )

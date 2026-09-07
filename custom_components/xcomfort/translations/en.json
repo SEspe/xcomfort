@@ -24,7 +24,21 @@
           "heating_zone6": "Heating Zone 6",
           "heating_zone_radiator": "Haating Zone 6 radiator"
         }
+      },
+      "reauth_confirm": {
+        "title": "Reauthenticate with the xComfort SHC",
+        "description": "The SHC rejected the stored password for {username}. Enter the current password.",
+        "data": {
+          "password": "Login password"
+        }
       }
+    },
+    "error": {
+      "invalid_auth": "Invalid username or password",
+      "cannot_connect": "Failed to connect to the SHC"
+    },
+    "abort": {
+      "reauth_successful": "Reauthentication was successful"
     }
   }
 }
