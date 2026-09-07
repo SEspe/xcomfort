@@ -14,6 +14,8 @@ from .xcomfortAPI import xcomfortAPI
 from .const import DOMAIN, VERSION
 _LOGGER = logging.getLogger(__name__)
 
+PLATFORMS = ["sensor", "binary_sensor", "light", "switch", "button", "cover", "climate"]
+
 async def async_setup(hass, config):
     return True
 
@@ -26,13 +28,22 @@ async def async_setup_entry(hass, config_entry):
     await coordinator.async_refresh()
     hass.data[DOMAIN] = coordinator
 
-    await hass.config_entries.async_forward_entry_setups(config_entry, ["sensor", "binary_sensor", "light", "switch", "button", "cover", "climate"])
+    await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
     async def async_service1(service_call):
         await coordinator.xc.debug()
 
     hass.services.async_register(DOMAIN,"save_status_files",async_service1,)
     return True
+
+async def async_unload_entry(hass, config_entry):
+    """Unload the entry so it can be reloaded or removed without restarting HA."""
+    unloaded = await hass.config_entries.async_unload_platforms(config_entry, PLATFORMS)
+    if unloaded:
+        # The service closes over this entry's coordinator, so it goes with it.
+        hass.services.async_remove(DOMAIN, "save_status_files")
+        hass.data.pop(DOMAIN, None)
+    return unloaded
 
 class XCDataUpdateCoordinator(DataUpdateCoordinator):
     def __init__(self, hass, session, url, zone, username, password, scan_interval,  ):
