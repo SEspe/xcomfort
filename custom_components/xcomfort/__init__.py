@@ -6,6 +6,7 @@ from datetime import timedelta
 from homeassistant.helpers import entity
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.exceptions import ConfigEntryAuthFailed
 
 #from xcomfortshc import xcomfortAPI
 from .xcomfortAPI import xcomfortAPI
@@ -44,8 +45,10 @@ class XCDataUpdateCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self):
         try:
             await self.xc.get_statuses()
-        except:
-            raise UpdateFailed("Error API")
+        except ConfigEntryAuthFailed:
+            raise
+        except Exception as err:
+            raise UpdateFailed(f"Error talking to the xComfort SHC: {err}") from err
         if not self.xc.devices:
             raise UpdateFailed("Invalid sensors data")
         return self.xc.devices

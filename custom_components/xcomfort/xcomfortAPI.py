@@ -4,6 +4,8 @@ import json
 import aiohttp
 import aiofiles
 
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -37,11 +39,14 @@ class xcomfortAPI:
                 _LOGGER.debug("connect() response.status=%d",response.status)
                 if response.status != 200:
                     if response.status == 401:
-                        _LOGGER.error('connect() Invalid username/password\nAborting...')
-                        exit(1)
+                        raise ConfigEntryAuthFailed(
+                            'Invalid username/password for the xComfort SHC'
+                        )
                     else:
-                        _LOGGER.error('.connect() Server responded with status code %s', str(response.status_code))
-                        exit(1)
+                        raise ConfigEntryNotReady(
+                            'xComfort SHC responded with status code '
+                            + str(response.status)
+                        )
                 else:
                     _LOGGER.debug('connect() headers=%s',response.headers)
                     sID = response.headers.get("Set-Cookie")
@@ -70,6 +75,7 @@ class xcomfortAPI:
                 response = await resp.json()
         except aiohttp.ClientConnectionError:
             _LOGGER.error('query() client connection error')
+            return [{}]
 
         if 'error' in response:
             _LOGGER.error("query() error, calling connect()")
