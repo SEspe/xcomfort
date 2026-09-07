@@ -1,7 +1,9 @@
-[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/custom-components/hacs) 
-# Eaton xComfort SHC integration for Home Assistance 
-This is Eaton xComfort smart home and Home Assistance integration custom component
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz/docs/faq/custom_repositories)
+# Eaton xComfort SHC integration for Home Assistant
+This is a custom component integrating the Eaton xComfort smart home system with Home Assistant.
 
+It continues [plamish/xcomfort](https://github.com/plamish/xcomfort), which has been dormant since
+June 2025. See [FORK.md](FORK.md) for how this repository is organised.
 
 ### Requirements :
 - [xComfort Smart Home Controller](https://www.eaton.com/bg/en-gb/catalog/residential/xcomfort-smart-home-controller.html)
@@ -10,7 +12,9 @@ This is Eaton xComfort smart home and Home Assistance integration custom compone
  > It is recommended to set the language of your Smart Home Controller to english as some state descriptions are language dependent and this integration only supports the english values
 
 ### Installation:
-  Use [HACS](https://hacs.xyz/docs/setup/download "HACS") to install the integration
+Add this repository to [HACS](https://hacs.xyz/docs/setup/download "HACS") as a custom repository:
+three-dot menu -> Custom repositories -> `https://github.com/SEspe/xcomfort`, category
+**Integration**. Then install it and restart Home Assistant.
 
 ### Configuration
 
@@ -22,22 +26,33 @@ To find zone number log into SHC via web console using this address http://ip_ad
 
 ### Supported devices
 
-The integration supports today:
-- Switch actuators
-- Light actuators 
-- Shutter actuators
-- Scenes
-- Temperature sensor
-- Binary sensors
-- Radiator thermostats
+| xComfort device | Appears in Home Assistant as |
+| --- | --- |
+| Dimming actuators | Light, with brightness |
+| Light actuators | Light |
+| Switch actuators | Switch |
+| Shutter actuators | Cover |
+| Scenes | Button |
+| Radiator thermostats | Climate |
+| Temperature sensors | Sensor, temperature |
+| Humidity sensors | Sensor, humidity |
+| Energy metering on actuators | Sensor, energy - feeds the energy dashboard |
+| Power metering on actuators | Sensor, power |
+| Room thermostat adjustment wheel | Sensor, the wheel offset in degrees |
+| Binary inputs | Binary sensor - assign a device class in the entity settings |
+| Motion sensors | Binary sensor, motion |
 
-The integration polls updates from xComfort SHC to Home Assistant with user defined frequency. Work on push based status updates is in progress.
+Battery level is not available. The SHC does not report a battery field for any device, through
+either of the API calls this integration uses, so it cannot be surfaced as an entity.
 
+If a device of yours does not appear, call the `xcomfort.save_status_files` action. It writes
+`xcomfort_devices` and `xcomfort_log_stats` into your config directory, which together show every
+device the controller reports and what type string it uses. Attach both to an issue.
+
+The integration polls updates from xComfort SHC to Home Assistant with user defined frequency.
 
 ### xComfort to MQTT broker
 For instant, push based updates from xComfort SHC to Home Assistant you can try AppDaemon based [xcomfort2mqtt](https://github.com/plamish/xcomfort2mqtt "xcomfort2mqtt") . This can be useful if you want to trigger  Home Assistant automations from your xComfort devices
 
 ### Help and new ideas
-For help or question open an issue. For new ideas or comments open an discussion
-
-
+For help or questions, open an [issue](https://github.com/SEspe/xcomfort/issues).
