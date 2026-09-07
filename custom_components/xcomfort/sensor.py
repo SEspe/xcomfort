@@ -20,17 +20,19 @@ _LOGGER = logging.getLogger(__name__)
 from .const import DOMAIN
 
 # Device types the SHC reports that map straight onto a numeric sensor, as
-# type substring -> (device class, state class, unit).
+# type substring -> (device class, state class, unit, icon, display precision).
+# A device class already implies an icon and a precision, so those two are only
+# spelled out for the type that has no device class.
 #
 # WheelSensor is the adjustment wheel on a room thermostat: it reports how far
 # the wheel has been turned, so the value is a relative offset in degrees
 # (-3.1 as readily as 3.1) rather than an absolute temperature. It gets no
 # device class for that reason.
 SENSOR_TYPES = {
-    "HumiditySensor": (SensorDeviceClass.HUMIDITY, SensorStateClass.MEASUREMENT, PERCENTAGE),
-    "EnergyConsumptionMeter": (SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, UnitOfEnergy.KILO_WATT_HOUR),
-    "PowerConsumptionMeter": (SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, UnitOfPower.WATT),
-    "WheelSensor": (None, SensorStateClass.MEASUREMENT, UnitOfTemperature.CELSIUS),
+    "HumiditySensor": (SensorDeviceClass.HUMIDITY, SensorStateClass.MEASUREMENT, PERCENTAGE, None, None),
+    "EnergyConsumptionMeter": (SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, UnitOfEnergy.KILO_WATT_HOUR, None, None),
+    "PowerConsumptionMeter": (SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, UnitOfPower.WATT, None, None),
+    "WheelSensor": (None, SensorStateClass.MEASUREMENT, UnitOfTemperature.CELSIUS, "mdi:knob", 1),
 }
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
@@ -41,10 +43,10 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             name = device['name'].replace("(temperature)","")
             async_add_entities([xcTemperature(coordinator, i, device['id'], name)])
         else:
-            for type_name, (device_class, state_class, unit) in SENSOR_TYPES.items():
+            for type_name, config in SENSOR_TYPES.items():
                 if device['type'].find(type_name) >= 0:
-                    async_add_entities([xcSensor(coordinator, i, device['id'], device['name'],
-                                                 device_class, state_class, unit)])
+                    async_add_entities([xcSensor(coordinator, i, device['id'],
+                                                 device['name'], *config)])
                     break
         i += 1
 
@@ -126,13 +128,16 @@ class xcTemperature(Entity):
 class xcSensor(SensorEntity):
     """A read-only numeric device the SHC exposes as a plain value."""
 
-    def __init__(self, coordinator, id, unique_name, name, device_class, state_class, unit):
+    def __init__(self, coordinator, id, unique_name, name, device_class, state_class,
+                 unit, icon, precision):
         self.id = id
         self._name = name
         self._unique_id = unique_name
         self._attr_device_class = device_class
         self._attr_state_class = state_class
         self._attr_native_unit_of_measurement = unit
+        self._attr_icon = icon
+        self._attr_suggested_display_precision = precision
         self.coordinator = coordinator
         self.last_message_time = ''
         self.messages_per_day = ''
