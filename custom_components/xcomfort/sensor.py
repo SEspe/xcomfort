@@ -1,5 +1,4 @@
 ###Version 1.3.5
-from homeassistant.helpers.entity import Entity
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -54,13 +53,16 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
                     break
         i += 1
 
-class xcTemperature(Entity):
+class xcTemperature(SensorEntity):
+
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
 
     def __init__(self, coordinator, id, unique_name, name ):
         self.id = id
         self._name = name
         self._unique_id = unique_name
-        self._unit_of_measurement = UnitOfTemperature.CELSIUS
         self.coordinator = coordinator
         self.last_message_time = ''
         self.messages_per_day = ''
@@ -86,15 +88,11 @@ class xcTemperature(Entity):
         return self._unique_id
 
     @property
-    def state(self):
+    def native_value(self):
         try:
             return float(self.coordinator.data[self.id]['value'])
-        except:
+        except (IndexError, KeyError, TypeError, ValueError):
             return None
-
-    @property
-    def unit_of_measurement(self):
-        return  self._unit_of_measurement
 
     @property
     def extra_state_attributes(self):
