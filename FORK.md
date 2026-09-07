@@ -109,12 +109,43 @@ history, automations, dashboards and area assignments all carry over untouched.
 Do steps 2–4 in one sitting. If Home Assistant does restart while the files are missing, the
 config entry is not lost — it just fails to set up, and recovers once the files are back.
 
-## Known upstream issues worth fixing
+## Upstream issue status
 
-- [#44](https://github.com/plamish/xcomfort/issues/44) — blocking I/O in the event loop
-- [#48](https://github.com/plamish/xcomfort/issues/48) — battery inputs missing after integration
-- [#46](https://github.com/plamish/xcomfort/issues/46) — won't load on 2025.6.0 (check whether
-  PR #47's deprecation fixes already covered this before spending time on it)
-- The README's "only devices from one SHC zone" limitation —
+Fixed in this fork, as of 1.3.12:
+
+- [#48](https://github.com/plamish/xcomfort/issues/48) — binary inputs never appeared; there was
+  no `binary_sensor` platform at all. Commented upstream.
+- [#32](https://github.com/plamish/xcomfort/issues/32) — humidity, open since Jan 2023 and never
+  answered. Commented upstream.
+- [#8](https://github.com/plamish/xcomfort/issues/8) — energy/power metering on switching
+  actuators, open since Nov 2021. Draft reply written, not posted.
+- [#44](https://github.com/plamish/xcomfort/issues/44) — blocking I/O. The live path was already
+  fixed upstream in 1.3.6; this fork removed the dead class still carrying it.
+
+Needs nothing:
+
+- [#46](https://github.com/plamish/xcomfort/issues/46) — fixed upstream in 1.3.7 by PR #47.
+- [#26](https://github.com/plamish/xcomfort/issues/26) — scenes are `ButtonEntity` now.
+- [#29](https://github.com/plamish/xcomfort/issues/29) — reporter self-resolved.
+
+Out of scope — different hardware:
+
+- [#45](https://github.com/plamish/xcomfort/issues/45) Eaton xStorage,
+  [#31](https://github.com/plamish/xcomfort/issues/31) xComfort Bridge (see
+  [jankrib/ha-xcomfort-bridge](https://github.com/jankrib/ha-xcomfort-bridge)). Note the remark in
+  #31 that Eaton consider the SHC to be nearing end of life, with the Bridge as its successor —
+  worth weighing before any large investment here.
+
+Still open and real:
+
+- **`is_connected` is never set to `True`.** The guard in `connect()` therefore always passes, so
+  every call re-authenticates against the SHC, including the one `query()` fires on any RPC error.
+  Setting it properly is obvious, but it changes runtime behaviour against live hardware and a
+  stale session that currently works by brute force could start failing if the flag sticks. Now
+  cheap to try, since Reload works. **This is the next thing to look at.**
+- **One zone per config entry** — [#30](https://github.com/plamish/xcomfort/issues/30) and
+  [#14](https://github.com/plamish/xcomfort/issues/14). The only gap with repeat demand.
   [Connect-Smart/xcomfort_multizone](https://github.com/Connect-Smart/xcomfort_multizone) is 7
   commits ahead of upstream attacking exactly this. Prior art worth reading first.
+- **`config_flow.py` does not validate credentials** on the initial setup step, so a wrong
+  password only surfaces at entry setup — which now routes into the reauth flow.
