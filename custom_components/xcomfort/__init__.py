@@ -60,6 +60,10 @@ class XCDataUpdateCoordinator(DataUpdateCoordinator):
             raise
         except Exception as err:
             raise UpdateFailed(f"Error talking to the xComfort SHC: {err}") from err
-        if not self.xc.devices:
+        # query() falls back to [{}] when the SHC cannot be reached, which is
+        # truthy, so the emptiness has to be checked one level down as well.
+        # Without this the coordinator reports success on a connection error and
+        # every entity reads None while still claiming to be available.
+        if not self.xc.devices or not self.xc.devices[0]:
             raise UpdateFailed("Invalid sensors data")
         return self.xc.devices
