@@ -10,6 +10,7 @@ from homeassistant.const import (
     UnitOfPower,
     UnitOfTemperature,
 )
+from homeassistant.helpers.entity import EntityCategory
 import json
 import logging
 import asyncio
@@ -17,6 +18,16 @@ import asyncio
 
 _LOGGER = logging.getLogger(__name__)
 from .const import DOMAIN
+
+def clean(value):
+    """Normalise a value the SHC reports.
+
+    It pads some of them, ' Very Weak' for a signal or a doubled space inside a
+    device name, and that padding ends up in entity names and attributes.
+    """
+    if value is None:
+        return None
+    return " ".join(str(value).split()) or None
 
 # Device types the SHC reports that map straight onto a numeric sensor, as
 # type substring -> (device class, state class, unit, icon, display precision).
@@ -44,14 +55,23 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             # under one device name, so stripping it off the reading left the two
             # entities telling apart only by the wheel having a suffix. The SHC
             # emits both suffixes in English whatever its display language.
-            async_add_entities([xcTemperature(coordinator, i, device['id'], device['name'])])
+            async_add_entities([xcTemperature(coordinator, i, device['id'],
+                                              clean(device['name']) or device['id'])])
         else:
             for type_name, config in SENSOR_TYPES.items():
                 if device['type'].find(type_name) >= 0:
                     async_add_entities([xcSensor(coordinator, i, device['id'],
-                                                 device['name'], *config)])
+                                                 clean(device['name']) or device['id'],
+                                                 *config)])
                     break
         i += 1
+    # Battery and signal state belong to the physical unit, not to the
+    # datapoints it exposes, so these come from the diagnostics call rather
+    # than from the zone's device list.
+    for uid, device in coordinator.xc.get_battery_devices().items():
+        async_add_entities([xcBattery(coordinator, uid, device['name'])])
+    if coordinator.xc.get_battery_status():
+        async_add_entities([xcBatteryStatus(coordinator)])
 
 class xcTemperature(SensorEntity):
 
@@ -179,6 +199,118 @@ class xcSensor(SensorEntity):
         else:
             self.messages_per_day = self.coordinator.xc.log_stats[stats_id]['msgsPerDay']
         return {"Messeges per day": self.messages_per_day, "Last message": self.last_message_time}
+
+    async def async_added_to_hass(self):
+        """Connect to dispatcher listening for entity data notifications."""
+        self.async_on_remove(self.coordinator.async_add_listener(self.async_write_ha_state))
+
+
+class xcBattery(SensorEntity):
+    """Battery state of one battery powered device, as reported by the SHC.
+
+    The controller only reports a coarse level as text, the same one its web
+    interface shows, and two different poweredId values both come back as
+    'Good'. There is nothing there to turn into a battery percentage, so the
+    text is passed through and the id is kept as an attribute.
+    """
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator, device_uid, name ):
+        self._device_uid = device_uid
+        self._name = (clean(name) or device_uid) + " battery"
+        self._unique_id = device_uid + "_battery"
+        self.coordinator = coordinator
+        _LOGGER.debug("xcBattery.init() %s", self._name)
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def unique_id(self):
+        return self._unique_id
+
+    @property
+    def should_poll(self):
+        return False
+
+    @property
+    def available(self):
+        return self.coordinator.last_update_success
+
+    @property
+    def icon(self):
+        if self.native_value is None:
+            return "mdi:battery-unknown"
+        return "mdi:battery"
+
+    @property
+    def native_value(self):
+        return clean(self.device.get('powered'))
+
+    @property
+    def device(self):
+        return self.coordinator.xc.physical_devices.get(self._device_uid, {})
+
+    @property
+    def extra_state_attributes(self):
+        device = self.device
+        return {"Battery id": clean(device.get('poweredId')),
+                "Signal": clean(device.get('rssi')),
+                "Signal id": clean(device.get('rssiId')),
+                "Device type": clean(device.get('type')),
+                "Serial number": clean(device.get('serialNr'))}
+
+    async def async_added_to_hass(self):
+        """Connect to dispatcher listening for entity data notifications."""
+        self.async_on_remove(self.coordinator.async_add_listener(self.async_write_ha_state))
+
+
+class xcBatteryStatus(SensorEntity):
+    """The controller's battery summary for the whole installation."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator ):
+        self._name = "xComfort batteries"
+        self._unique_id = "xcomfort_batteries"
+        self.coordinator = coordinator
+        _LOGGER.debug("xcBatteryStatus.init() %s", self._name)
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def unique_id(self):
+        return self._unique_id
+
+    @property
+    def should_poll(self):
+        return False
+
+    @property
+    def available(self):
+        return self.coordinator.last_update_success
+
+    @property
+    def icon(self):
+        if clean(self.status.get('statusColor')) == 'green':
+            return "mdi:battery-check"
+        return "mdi:battery-alert"
+
+    @property
+    def native_value(self):
+        return clean(self.status.get('statusValue'))
+
+    @property
+    def status(self):
+        return self.coordinator.xc.get_battery_status()
+
+    @property
+    def extra_state_attributes(self):
+        return {"Status color": clean(self.status.get('statusColor'))}
 
     async def async_added_to_hass(self):
         """Connect to dispatcher listening for entity data notifications."""

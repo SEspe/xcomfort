@@ -8,6 +8,17 @@ from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 
 _LOGGER = logging.getLogger(__name__)
 
+# Diagnostics/getPhysicalDevices reports how a device is powered as an id plus
+# a text, the same text the SHC web interface shows. Mains powered devices use
+# poweredId '6' / powered 'Mains', battery powered ones the lower ids. Ids '1'
+# and '2' are both shown as 'Good', so the text is the level to go by, not the
+# id.
+POWERED_MAINS_ID = '6'
+
+# 'statusId' of the battery entry in Diagnostics/getAllSystemStates. It sums up
+# every battery powered device, e.g. 'Sensor(s) battery OK' / statusColor green.
+BATTERY_STATUS_ID = 'batteries'
+
 
 class xcomfortAPI:
     def __init__(self, session: aiohttp.ClientSession ,url, zone, username, password, stat_interval):
@@ -16,6 +27,8 @@ class xcomfortAPI:
         self.devices = {}
         self.scenes = {}
         self.log_stats = {}
+        self.physical_devices = {}
+        self.system_states = {}
         self.zones_list = {}
         self.heating_zones = []
         self.heating_status = {}
@@ -113,6 +126,18 @@ class xcomfortAPI:
             self.update_counter = self.stat_interval
             self.stat_scan_now = False
             self.log_stats = await self.query('Diagnostics/getPhysicalDevicesWithLogStats')
+            self.physical_devices = {}
+            for device in await self.query('Diagnostics/getPhysicalDevices'):
+                try:
+                    self.physical_devices[device['deviceUid']] = device
+                except (TypeError, KeyError):
+                    _LOGGER.debug("get_statuses() physical device without deviceUid=%s", device)
+            self.system_states = {}
+            for state in await self.query('Diagnostics/getAllSystemStates'):
+                try:
+                    self.system_states[state['statusId']] = state
+                except (TypeError, KeyError):
+                    _LOGGER.debug("get_statuses() system state without statusId=%s", state)
             for zone in self.heating_zones:
                 #_LOGGER.debug("get_statuses() zone=%s", zone)
                 results = await self.query('ClimateFunction/getZoneOverview',[zone])
@@ -123,6 +148,29 @@ class xcomfortAPI:
                 self.heating_status.update(x)
         self.update_counter -=1
         return True
+
+    def get_battery_devices(self):
+        """The physical devices that run on a battery, keyed on their uid.
+
+        Battery and signal state belong to the physical unit, so the datapoint
+        children a unit exposes are skipped: a dual push-button gets one entry,
+        not one per channel.
+        """
+        battery_devices = {}
+        for uid, device in self.physical_devices.items():
+            if device.get('parentId'):
+                continue
+            if not device.get('powered'):
+                continue
+            if str(device.get('poweredId')) == POWERED_MAINS_ID:
+                continue
+            battery_devices[uid] = device
+        _LOGGER.debug("get_battery_devices() %d battery devices", len(battery_devices))
+        return battery_devices
+
+    def get_battery_status(self):
+        """The controller's own summary of every battery powered device."""
+        return self.system_states.get(BATTERY_STATUS_ID, {})
 
     async def get_zones(self):
         _LOGGER.debug("get_zones()")
@@ -202,4 +250,6 @@ class xcomfortAPI:
         async with aiofiles.open("xcomfort_devices", "w") as file:
             await file.write(json.dumps(self.devices, indent=4))
         async with aiofiles.open("xcomfort_log_stats", "w") as file:
-            await file.write(json.dumps(self.log_stats, indent=4))   
+            await file.write(json.dumps(self.log_stats, indent=4))
+        async with aiofiles.open("xcomfort_physical_devices", "w") as file:
+            await file.write(json.dumps(self.physical_devices, indent=4))   

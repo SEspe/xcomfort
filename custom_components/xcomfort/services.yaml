@@ -1,3 +1,3 @@
 save_status_files:
   name: Save status files
-  description: Saves xcomfort_devices and xcomfort_log_stats in /config folder
+  description: Saves xcomfort_devices, xcomfort_log_stats and xcomfort_physical_devices in /config folder

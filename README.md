@@ -54,13 +54,30 @@ To find zone number log into SHC via web console using this address http://ip_ad
 | Room thermostat adjustment wheel | Sensor, the wheel offset in degrees |
 | Binary inputs | Binary sensor - assign a device class in the entity settings |
 | Motion sensors | Binary sensor, motion |
+| Battery powered devices | Sensor, the battery level the SHC reports |
+| The installation as a whole | Sensor, the SHC's own battery summary |
 
-Battery level is not available. The SHC does not report a battery field for any device, through
-either of the API calls this integration uses, so it cannot be surfaced as an entity.
+### Battery status
+
+Every battery powered device gets a diagnostic `<device name> battery` sensor, and an
+`xComfort batteries` sensor carries the summary the controller makes for the whole
+installation.
+
+The state is the level the SHC itself reports, in the language your controller is set to,
+for example `Good`. It is not a percentage: the controller only distinguishes a few coarse
+levels, and two of the ids it uses are both displayed as `Good`, so there is nothing there
+to convert. Signal quality, device type and serial number come along as attributes.
+
+Battery and signal state belong to the physical unit rather than to the datapoints it
+exposes, so a dual push-button gets one battery sensor and not one per channel. Unlike the
+other platforms this is not limited to the configured zone, because the controller reports
+it for the whole installation. It is read on the same slower interval as the message
+statistics rather than on every poll.
 
 If a device of yours does not appear, call the `xcomfort.save_status_files` action. It writes
-`xcomfort_devices` and `xcomfort_log_stats` into your config directory, which together show every
-device the controller reports and what type string it uses. Attach both to an issue.
+`xcomfort_devices`, `xcomfort_log_stats` and `xcomfort_physical_devices` into your config
+directory, which together show every device the controller reports and what type string it
+uses. Attach them to an issue.
 
 The integration polls updates from xComfort SHC to Home Assistant with user defined frequency.
 
