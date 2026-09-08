@@ -5,6 +5,19 @@ This is a custom component integrating the Eaton xComfort smart home system with
 It continues [plamish/xcomfort](https://github.com/plamish/xcomfort), which has been dormant since
 June 2025. See [FORK.md](FORK.md) for how this repository is organised.
 
+### What the Smart Home Controller does
+xComfort devices talk to each other over Eaton's own radio protocol, which Home Assistant cannot
+speak. The Smart Home Controller (SHC) is the bridge between the two: it is the hub your xComfort
+devices are paired with, and it exposes them on your local network through an HTTP API.
+
+This integration is the Home Assistant end of that bridge. It signs in to the SHC at its address on
+your LAN, reads the devices in the zone you configure and mirrors them as Home Assistant entities,
+so the lights, blinds, thermostats and sensors you would otherwise operate from the xComfort app
+become ordinary HA entities on your dashboards and in your automations. Commands travel back the
+same path: Home Assistant to the SHC, and the SHC out to the device over radio.
+
+Everything stays on your own network - no Eaton cloud account is involved.
+
 ### Requirements :
 - [xComfort Smart Home Controller](https://www.eaton.com/bg/en-gb/catalog/residential/xcomfort-smart-home-controller.html)
 - [Home Assistant](https://www.home-assistant.io)
