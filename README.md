@@ -64,8 +64,5 @@ device the controller reports and what type string it uses. Attach both to an is
 
 The integration polls updates from xComfort SHC to Home Assistant with user defined frequency.
 
-### xComfort to MQTT broker
-For instant, push based updates from xComfort SHC to Home Assistant you can try AppDaemon based [xcomfort2mqtt](https://github.com/plamish/xcomfort2mqtt "xcomfort2mqtt") . This can be useful if you want to trigger  Home Assistant automations from your xComfort devices
-
 ### Help and new ideas
 For help or questions, open an [issue](https://github.com/SEspe/xcomfort/issues).
