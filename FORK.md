@@ -12,11 +12,14 @@ Upstream is *not* archived, so the door back is deliberately kept open — see [
 | Branch | Purpose | Rules |
 | --- | --- | --- |
 | `main` | The maintained line. What runs in Home Assistant. | Default branch on GitHub. Small fixes land here directly. |
-| `master` | Untouched mirror of `upstream/master` | Never commit here. Only ever fast-forwarded from upstream. |
-| `fix/*`, `feat/*` | A change worth offering upstream | Branched off `master`, kept free of fork-specific commits. |
+| `fix/*`, `feat/*` | A change worth offering upstream | Branched off `upstream/master`, kept free of fork-specific commits. |
 
-Keeping `master` and the `upstream` remote costs nothing and is the insurance policy: if plamish
-returns, or if the integration finds a new home, work can still be offered as a clean PR.
+`main` is the only long-lived branch. The fork's old `master` mirror was deleted on 2026-09-08:
+it had drifted 23 commits behind `main`, and work was twice built on it by mistake. Anything meant
+to run here starts from `main` — never from `upstream/master`, which `main` has long diverged from.
+
+Keeping the `upstream` remote costs nothing and is the insurance policy: if plamish returns, or if
+the integration finds a new home, work can still be offered as a clean PR.
 
 ## Remotes
 
@@ -38,13 +41,12 @@ git checkout main
 git push origin main
 ```
 
-**When a change is self-contained enough to offer upstream** — build it off `master` so the PR
-carries none of this fork's own commits, then merge it into `main` to actually use it:
+**When a change is self-contained enough to offer upstream** — build it off `upstream/master` so
+the PR carries none of this fork's own commits, then merge it into `main` to actually use it:
 
 ```sh
 git fetch upstream
-git checkout master && git merge --ff-only upstream/master
-git checkout -b fix/short-description master
+git checkout -b fix/short-description upstream/master
 # ...edit, commit...
 git push origin fix/short-description
 gh pr create --repo plamish/xcomfort --base master --head SEspe:fix/short-description
@@ -55,8 +57,7 @@ git checkout main && git merge fix/short-description
 
 ```sh
 git fetch upstream
-git checkout master && git merge --ff-only upstream/master
-git checkout main && git merge master
+git checkout main && git merge upstream/master
 ```
 
 ## Releases
@@ -65,9 +66,9 @@ HACS installs from the latest GitHub release, and falls back to the default bran
 repository has none. Cutting a tag per meaningful change gives HACS a proper update prompt:
 
 ```sh
-# bump "version" in custom_components/xcomfort/manifest.json first
-git tag v1.3.8 && git push origin v1.3.8
-gh release create v1.3.8 --title v1.3.8 --notes "..."
+# bump VERSION in custom_components/xcomfort/const.py and "version" in manifest.json together
+git tag v1.3.x && git push origin v1.3.x
+gh release create v1.3.x --title v1.3.x --notes "..."
 ```
 
 Versioning continues upstream's sequence — upstream's last code was 1.3.7, so this fork starts at
@@ -111,7 +112,7 @@ config entry is not lost — it just fails to set up, and recovers once the file
 
 ## Upstream issue status
 
-Fixed in this fork, as of 1.3.12:
+Fixed in this fork, as of 1.3.13:
 
 - [#48](https://github.com/plamish/xcomfort/issues/48) — binary inputs never appeared; there was
   no `binary_sensor` platform at all. Commented upstream.
@@ -121,6 +122,13 @@ Fixed in this fork, as of 1.3.12:
   actuators, open since Nov 2021. Draft reply written, not posted.
 - [#44](https://github.com/plamish/xcomfort/issues/44) — blocking I/O. The live path was already
   fixed upstream in 1.3.6; this fork removed the dead class still carrying it.
+
+Added in this fork without an upstream issue:
+
+- Battery sensors (1.3.13) — one per battery powered physical device, plus the SHC's own
+  installation-wide battery summary. The state is the SHC's text (`Good`, …), not a percentage:
+  the controller reports battery as a coarse id whose values 1 and 2 both read `Good`, so a
+  percentage would be invented precision.
 
 Needs nothing:
 
