@@ -65,6 +65,7 @@ class xcomfortAPI:
                     sID = response.headers.get("Set-Cookie")
                     x = sID.find("End")
                     self.sessionID = sID[0:x+3]
+                    self.is_connected = True
                     _LOGGER.debug('xcomfortAPI.connect() New sessionID = %s', self.sessionID)
 
     async def query(self, method, params=['', '']):

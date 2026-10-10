@@ -123,7 +123,13 @@ Fixed in this fork, as of 1.3.13:
 - [#44](https://github.com/plamish/xcomfort/issues/44) — blocking I/O. The live path was already
   fixed upstream in 1.3.6; this fork removed the dead class still carrying it.
 
-Added in this fork without an upstream issue:
+Done in this fork without an upstream issue:
+
+- `is_connected` is now set once `connect()` gets a session cookie; before, it was never `True`.
+  This was long noted here as "every call re-authenticates", but that was wrong: `connect()` only
+  runs at entry setup and in `query()`'s retry on an RPC error, which clears the flag itself
+  first. Normal queries always reused the cookie, so the fix corrects the flag without changing
+  what is sent to the SHC.
 
 - Battery sensors (1.3.13) — one per battery powered physical device, plus the SHC's own
   installation-wide battery summary. The state is the SHC's text (`Good`, …), not a percentage:
@@ -146,11 +152,6 @@ Out of scope — different hardware:
 
 Still open and real:
 
-- **`is_connected` is never set to `True`.** The guard in `connect()` therefore always passes, so
-  every call re-authenticates against the SHC, including the one `query()` fires on any RPC error.
-  Setting it properly is obvious, but it changes runtime behaviour against live hardware and a
-  stale session that currently works by brute force could start failing if the flag sticks. Now
-  cheap to try, since Reload works. **This is the next thing to look at.**
 - **One zone per config entry** — [#30](https://github.com/plamish/xcomfort/issues/30) and
   [#14](https://github.com/plamish/xcomfort/issues/14). The only gap with repeat demand.
   [Connect-Smart/xcomfort_multizone](https://github.com/Connect-Smart/xcomfort_multizone) is 7
