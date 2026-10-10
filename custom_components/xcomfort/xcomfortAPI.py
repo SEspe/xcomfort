@@ -63,6 +63,10 @@ class xcomfortAPI:
                 else:
                     _LOGGER.debug('connect() headers=%s',response.headers)
                     sID = response.headers.get("Set-Cookie")
+                    if not sID:
+                        raise ConfigEntryNotReady(
+                            'xComfort SHC accepted the login but sent no session cookie'
+                        )
                     x = sID.find("End")
                     self.sessionID = sID[0:x+3]
                     self.is_connected = True
@@ -102,8 +106,8 @@ class xcomfortAPI:
                     'Accept': 'application/json, text/javascript, */*; q=0.01',
                 }
             try:
-                resp = await self.session.post(json_url, data=json.dumps(rpc_data), headers=rpc_headers)
-                response = await resp.json()
+                async with self.session.post(json_url, data=json.dumps(rpc_data), headers=rpc_headers) as resp:
+                    response = await resp.json()
             except aiohttp.ClientConnectionError:
                 _LOGGER.error('query() client connection error after connect()')
 
