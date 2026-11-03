@@ -20,6 +20,15 @@ POWERED_MAINS_ID = '6'
 BATTERY_STATUS_ID = 'batteries'
 
 
+def _succeeded(result):
+    """True if a controlDevice/triggerScene/set* reply reports status 'ok'.
+
+    query() returns [{}] when the SHC cannot be reached, and a list cannot be
+    indexed by name, so anything that is not a dict counts as a failure.
+    """
+    return isinstance(result, dict) and result.get('status') == 'ok'
+
+
 class xcomfortAPI:
     def __init__(self, session: aiohttp.ClientSession ,url, zone, username, password, stat_interval):
         self.sessionID = ''
@@ -184,14 +193,14 @@ class xcomfortAPI:
 
     async def switch(self, dev_id, state):
         result = await self.query('StatusControlFunction/controlDevice', params=[self.zone, dev_id, state])
-        if not result['status'] == 'ok':
+        if not _succeeded(result):
             return False
         else:
             return True
 
     async def scene(self, scene_id):
         result = await self.query('SceneFunction/triggerScene', params=[self.zone, scene_id])
-        if not result['status'] == 'ok':
+        if not _succeeded(result):
             return False
         else:
             return True
@@ -199,7 +208,7 @@ class xcomfortAPI:
     async def set_temperture(self, zone_id, temp):
         _LOGGER.debug("set_temperture %s %s ",zone_id,str(temp))
         result = await self.query('ClimateFunction/setSetpoint', [zone_id, str(temp)])
-        if not result['status'] == 'ok':
+        if not _succeeded(result):
             _LOGGER.debug("set_temperture %s UNsuccess",zone_id)
             return False
         else:
@@ -214,7 +223,7 @@ class xcomfortAPI:
         else:
             _mode = 'off'
         result = await self.query('ClimateFunction/setControlType', [zone_id, _mode])
-        if not result['status'] == 'ok':
+        if not _succeeded(result):
             _LOGGER.debug("set_heatingmode %s UNsuccess",zone_id)
             return False
         else:

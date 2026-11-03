@@ -1,3 +1,3 @@
 DEFAULT_NAME = "XComfort SHC"
 DOMAIN = "xcomfort"
-VERSION = "1.3.14"
+VERSION = "1.3.15"

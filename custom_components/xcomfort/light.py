@@ -102,7 +102,9 @@ class xcLight(LightEntity):
 
     async def async_turn_on(self, **kwargs):
         if self.type == 'DimActuator':
-            brightness = int(100 * kwargs.get(ATTR_BRIGHTNESS, 255) / 255)
+            # Rounding down would send 0 for HA brightness 1-2, which switches
+            # the dimmer off while HA still shows it on.
+            brightness = max(1, int(100 * kwargs.get(ATTR_BRIGHTNESS, 255) / 255))
             if await self.coordinator.xc.switch(self._unique_id,str(brightness)):
                 self.coordinator.data[self.id]['value']=str(brightness)
                 self.async_write_ha_state()
