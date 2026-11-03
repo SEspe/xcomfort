@@ -1,8 +1,6 @@
 ###Version 1.3.5
 from homeassistant.components.switch import SwitchEntity
-import json
 import logging
-import asyncio
 
 from .const import DOMAIN
 _LOGGER = logging.getLogger(__name__)

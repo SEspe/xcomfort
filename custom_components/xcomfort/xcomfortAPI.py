@@ -54,8 +54,7 @@ class xcomfortAPI:
     async def connect(self):
         _LOGGER.debug("connect()")
         if not self.is_connected:
-            headers = {'User-Agent': 'Mozilla/5.0'}
-            auth = aiohttp.BasicAuth(login=self.username, password=self.password)
+            auth =aiohttp.BasicAuth(login=self.username, password=self.password)
 
             async with self.session.get(self.url, auth=auth) as response:
                 _LOGGER.debug("connect() response.status=%d",response.status)
@@ -107,7 +106,7 @@ class xcomfortAPI:
         if 'error' in response:
             _LOGGER.error("query() error, calling connect()")
             self.is_connected = False
-            good = await self.connect()
+            await self.connect()
             rpc_headers = {
                     'Cookie': self.sessionID,
                     'Accept-Encoding': 'gzip, deflate',

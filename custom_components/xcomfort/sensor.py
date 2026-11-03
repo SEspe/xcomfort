@@ -11,9 +11,7 @@ from homeassistant.const import (
     UnitOfTemperature,
 )
 from homeassistant.helpers.entity import EntityCategory
-import json
 import logging
-import asyncio
 
 
 _LOGGER = logging.getLogger(__name__)

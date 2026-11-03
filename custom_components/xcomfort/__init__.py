@@ -1,9 +1,7 @@
 ###Version 1.3.7
-import async_timeout
 import logging
 
 from datetime import timedelta
-from homeassistant.helpers import entity
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.exceptions import ConfigEntryAuthFailed
@@ -11,7 +9,7 @@ from homeassistant.exceptions import ConfigEntryAuthFailed
 #from xcomfortshc import xcomfortAPI
 from .xcomfortAPI import xcomfortAPI
 
-from .const import DOMAIN, VERSION
+from .const import DOMAIN
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = ["sensor", "binary_sensor", "light", "switch", "button", "cover", "climate"]

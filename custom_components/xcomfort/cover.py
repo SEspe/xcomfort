@@ -4,9 +4,7 @@ from homeassistant.components.cover import (
     CoverEntityFeature,
 )
 
-import json
 import logging
-import asyncio
 
 from .const import DOMAIN
 _LOGGER = logging.getLogger(__name__)

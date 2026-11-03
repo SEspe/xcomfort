@@ -1,5 +1,4 @@
 ###Version 1.3.5
-from homeassistant.const import CONF_NAME
 from homeassistant import config_entries
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import aiohttp

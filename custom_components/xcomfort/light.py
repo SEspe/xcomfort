@@ -1,9 +1,7 @@
 ###Version 1.3.5
 from homeassistant.components.light import (ATTR_BRIGHTNESS, LightEntity, ColorMode)
 
-import json
 import logging
-import asyncio
 
 from .const import DOMAIN
 _LOGGER = logging.getLogger(__name__)

@@ -1,34 +1,17 @@
 ###Version 1.3.5
-import json
 import logging
-import asyncio
 
 from homeassistant.core import callback
-from homeassistant.components.climate import PLATFORM_SCHEMA, ClimateEntity, HVACMode, ClimateEntityFeature, HVACAction
+from homeassistant.components.climate import ClimateEntity, HVACMode, ClimateEntityFeature
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from homeassistant.const import UnitOfTemperature
 
 from homeassistant.const import (
-    ATTR_ENTITY_ID,
     ATTR_TEMPERATURE,
-    CONF_NAME,
-    EVENT_HOMEASSISTANT_START,
     PRECISION_HALVES,
-    PRECISION_TENTHS,
-    PRECISION_WHOLE,
-    SERVICE_TURN_OFF,
-    SERVICE_TURN_ON,
-    STATE_ON,
-    STATE_UNAVAILABLE,
-    STATE_UNKNOWN,
 )
 
-from homeassistant.components.climate.const import (
-    ATTR_PRESET_MODE,
-    PRESET_AWAY,
-    PRESET_NONE,
-)
 
 from .const import DOMAIN
 _LOGGER = logging.getLogger(__name__)
