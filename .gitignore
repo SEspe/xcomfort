@@ -1,2 +1,5 @@
 .DS_store
 drafts/
+.venv/
+.pytest_cache/
+__pycache__/

@@ -60,6 +60,19 @@ git fetch upstream
 git checkout main && git merge upstream/master
 ```
 
+## Tests
+
+Plain pytest, no Home Assistant install needed. `tests/conftest.py` stubs the HA and aiohttp
+names the tests use when they are not installed, so the suite runs on any Python 3.11+.
+
+```sh
+python -m venv .venv && .venv/Scripts/activate   # or .venv/bin/activate
+pip install -r requirements_test.txt
+pytest
+```
+
+Add a test for every bug fix, and check that it fails on the old code before the fix.
+
 ## Releases
 
 HACS installs from the latest GitHub release, and falls back to the default branch when a
